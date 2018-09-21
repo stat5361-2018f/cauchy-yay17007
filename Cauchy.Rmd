@@ -4,7 +4,6 @@ author: "Yaqiong Yao"
 date: "9/21/2018"
 output:
   pdf_document: default
-  html_document: default
 ---
 
 # Q1
@@ -32,7 +31,7 @@ The first derivative is:
 
 \begin{align*}
 \ell'(\theta) &= \frac{\partial \ell (\theta)}{\partial \theta} \\
-&= -\sum_{i=1}^n \frac{\theta-X_i}{1+(X_i - \theta)^2}.
+&= -2\sum_{i=1}^n \frac{\theta-X_i}{1+(X_i - \theta)^2}.
 \end{align*}
 
 The second derivative is:
@@ -53,14 +52,22 @@ I_1 (\theta) &= E\left[-\frac{\partial^2 \ell(\theta)}{\partial \theta^2} \middl
 &= \frac{2}{\pi} \left( \int_{-\infty}^{\infty} \frac{2}{(1+X^2)^3} - \int_{-\infty}^{\infty} \frac{1}{(1+X^2)^2} \right) dt
 \end{align*}
 
-where $t = (\theta-X)$. Then the question becomes how to derive $I_k = \int_{-\infty}^{\infty} \frac{1}{(1+t^2)^k}$.
+where $t = (\theta-X)$. Then the question becomes how to derive $M_k = \int_{-\infty}^{\infty} \frac{1}{(1+t^2)^k}$.
 
 \begin{align*}
-I_k &= \int_{-\infty}^{\infty} \frac{(1+t^2)}{(1+t^2)^{(k+1)}} dt \\
-&= I_{k+1} + \frac{1}{2k} I_{k}
+M_k &= \int_{-\infty}^{\infty} \frac{(1+t^2)}{(1+t^2)^{(k+1)}} dt \\
+&= M_{k+1} + \int_{-\infty}^{\infty} \frac{2kt}{(1+t^2)^{k+1}} \frac{t}{2k} dt \\
 \end{align*}
 
-Since we know that $I_1 = \int_{-\infty}^{\infty} \frac{1}{1+t^2} = \pi$, thus $I_1(\theta) = \frac{1}{2}$. Then $I_n(\theta) = \frac{n}{2}$.
+Since, 
+
+\begin{align*}
+\int_{-\infty}^{\infty} \frac{2kt}{(1+t^2)^{k+1}} \frac{t}{2k} dt &= \left( (-\frac{1}{(1+t^2)^k} \frac{t}{2k})\right) + \int_{-\infty}^{\infty} \frac{1}{(1+t^2)^k} \frac{1}{2k} dt \\
+&= \int_{-\infty}^{\infty} \frac{1}{(1+t^2)^k}\frac{1}{2k} dt \\
+&= \frac{1}{2k} M_{k} 
+\end{align*}
+
+Since we know that $M_1 = \int_{-\infty}^{\infty} \frac{1}{1+t^2} dt = \pi$, thus $M_1(\theta) = \frac{1}{2}$. Then $M_n(\theta) = \frac{n}{2}$. \footnote{This method is from \url{https://stats.stackexchange.com/questions/145017/cauchy-distribution-likelihood-and-fisher-information}}
 
 
 
