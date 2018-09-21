@@ -1,0 +1,231 @@
+---
+title: "Cauchy"
+author: "Yaqiong Yao"
+date: "9/21/2018"
+output:
+  pdf_document: default
+  html_document: default
+---
+
+# Q1
+
+We know the density of Cauchy distribution is:
+
+$$ f(x; \theta) = \frac{1}{\pi[1+(x-\theta)^2]}, \quad x \in R, \quad \theta \in R.$$
+
+The likelihood function can be represented as:
+
+\begin{align*}
+L(\theta) &= \prod_{i=1}^n f(X_i; \theta) \\
+&= \prod_{i=1}^n \frac{1}{\pi[1+(X_i - \theta)^2]}.
+\end{align*}
+
+Thus, the log-likelihood function is:
+
+\begin{align*}
+\ell (\theta) &= \log L(\theta) \\
+&= \sum_{i=1}^n \log(\frac{1}{\pi[1+(X_i-\theta)^2]}) \\
+&= -n\log\pi - \sum_{i=1}^n \log[1+(X_i-\theta)^2].
+\end{align*}
+
+The first derivative is:
+
+\begin{align*}
+\ell'(\theta) &= \frac{\partial \ell (\theta)}{\partial \theta} \\
+&= -\sum_{i=1}^n \frac{\theta-X_i}{1+(X_i - \theta)^2}.
+\end{align*}
+
+The second derivative is:
+
+\begin{align*}
+\ell''(\theta) &= \frac{\partial \ell'(\theta)}{\partial \theta} \\
+&= -2\sum_{i=1}^n \frac{1 + (X_i-\theta)^2 - 2(X_i-\theta)^2}{[1+(X_i-\theta)^2]^2} \\
+&= -2\sum_{i=1}^n \frac{1 - (X_i-\theta)^2}{[1+(X_i-\theta)^2]^2}.
+\end{align*}
+
+The fisher information for one sample is:
+
+\begin{align*}
+I_1 (\theta) &= E\left[-\frac{\partial^2 \ell(\theta)}{\partial \theta^2} \middle\vert \theta \right] \\
+&= E\left[ \frac{2[1-(\theta-X)^2]}{(1+(\theta-X)^2)^2} \middle\vert \theta \right] \\
+&= \frac{2}{\pi} \int_{-\infty}^{\infty} \frac{1-(\theta-X)^2}{(1+(\theta-X)^2)^3} dx \\
+&= \frac{2}{\pi} \int_{-\infty}^{\infty} \frac{1-t^2}{(1+t^2)^3} dt \\
+&= \frac{2}{\pi} \left( \int_{-\infty}^{\infty} \frac{2}{(1+X^2)^3} - \int_{-\infty}^{\infty} \frac{1}{(1+X^2)^2} \right) dt
+\end{align*}
+
+where $t = (\theta-X)$. Then the question becomes how to derive $I_k = \int_{-\infty}^{\infty} \frac{1}{(1+t^2)^k}$.
+
+\begin{align*}
+I_k &= \int_{-\infty}^{\infty} \frac{(1+t^2)}{(1+t^2)^{(k+1)}} dt \\
+&= I_{k+1} + \frac{1}{2k} I_{k}
+\end{align*}
+
+Since we know that $I_1 = \int_{-\infty}^{\infty} \frac{1}{1+t^2} = \pi$, thus $I_1(\theta) = \frac{1}{2}$. Then $I_n(\theta) = \frac{n}{2}$.
+
+
+
+
+
+# Q2
+
+```{r}
+set.seed(20180909)
+n <- 10
+theta_true <- 5
+X <- rcauchy(n, location = theta_true, scale = 1)
+# Implement the log-likelihood function
+likelihood <- function(x){
+  -n*log(pi) - sum(log(1+(X-x)^2))
+}
+hh <- Vectorize(likelihood)
+curve(hh, -30, 30, ylab = "log-likelihood", xlab = expression(theta))
+```
+
+# Q3
+
+The algorithm for Newton-Raphson is:
+
+$$ \theta^{(t+1)} = \theta^{(t)} - (\ell''(\theta^{(t)}))^{-1} \ell'(\theta^{(t)}) $$
+
+
+```{r}
+Newton <- function(init){
+  theta0 <- init
+  i <- 0
+  diff <- 1
+  msg <- "converge"
+  while(abs(diff) > 0.0000001){
+    lfd <- -2*sum((theta0-X)/(1+(theta0-X)^2))
+    lsd <- -2*sum((1-(theta0-X)^2)/(1+(theta0-X)^2)^2)
+    diff <- (lfd/lsd)
+    theta1 <- theta0 - diff
+    theta0 <- theta1
+    i <- i+1
+    #cat(i)
+    if(i >= 150){
+      msg <- "Not converge"
+      break
+    }
+  }
+  return(list(theta = theta0, itr = i, msg = msg))
+}
+```
+
+
+```{r}
+Newton_summary <- NULL
+for(i in seq(-10, 20, 0.5)){
+  result <- Newton(i)
+  if(result$msg == "converge"){
+    Newton_summary <- rbind(Newton_summary, c(i, result$theta, result$itr))
+  }
+}
+colnames(Newton_summary) <- c("start_point", "theta", "iteration")
+Newton_summary
+```
+
+I omit not converge results to save space. We can see that Newton-Raphson result shows that a lot of start points result in not coverge.
+
+
+# Q4
+
+Use fixed point method to estimate $theta$. The algorithm for it is:
+
+$$ \theta^{(t+1)} = \theta^{t} + \alpha \ell'(\theta)$$
+
+```{r}
+fixed_point <- function(init, alpha){
+  theta0 <- init
+  i <- 0
+  diff <- 1
+  msg <- "converge"
+  alpha <- alpha
+  while(abs(diff) > 0.0000001){
+    lfd <- -2*sum((theta0-X)/(1+(theta0-X)^2))
+    diff <- alpha*lfd
+    theta1 <- theta0 + diff
+    theta0 <- theta1
+    i <- i+1
+    if(i >= 150){
+      msg <- "Not converge"
+      break
+    }
+  }
+  return(list(theta = theta0, itr = i, msg = msg))
+}
+
+fixed_point_summary <- NULL
+for(alpha in c(1, 0.64, 0.25)){
+  for(i in seq(-10, 20, 0.5)){
+  result <- fixed_point(i, alpha)
+  if(result$msg == "converge"){
+    fixed_point_summary <- rbind(fixed_point_summary, c(alpha, i, result$theta, result$itr))
+  }
+}
+}
+
+colnames(fixed_point_summary) <- c("alpha", "start_point", "theta", "iteration")
+fixed_point_summary
+```
+
+I omit not converge results to save space. We can see that when $alpha = 1, 0.64$. All starting points give us not converge result. But $alpha = 0.25$ works well.
+
+
+# Q5
+
+The fisher information is $I_n(\theta) = \frac{n}{2}$.
+
+```{r}
+Newton_fisher <- function(init){
+  theta0 <- init
+  i <- 0
+  diff <- 1
+  msg <- "converge"
+  while(abs(diff) > 0.0000001){
+    lfd <- -2*sum((theta0-X)/(1+(theta0-X)^2))
+    I <- n/2
+    diff <- (lfd/I)
+    theta1 <- theta0 + diff
+    theta0 <- theta1
+    i <- i+1
+    #cat(i)
+    if(i >= 150){
+      msg <- "Not converge"
+      break
+    }
+  }
+  return(list(theta = theta0, itr = i, msg = msg))
+}
+
+Newton_fisher_summary <- NULL
+for(i in seq(-10, 20, 0.5)){
+  result <- Newton_fisher(i)
+  if(result$msg == "converge"){
+    Newton_fisher_summary <- rbind(Newton_fisher_summary, c(i, result$theta, result$itr))
+  }
+}
+colnames(Newton_fisher_summary) <- c("start_point", "theta", "iteration")
+Newton_fisher_summary
+
+```
+
+I omit not converge results to save space. All points are coverged.
+
+# Q6
+
+We can see that choosing starting point for Newton-Raphson is extremely important. However, when it is converged, the iteration of Newton-Raphson is relatively small than other two methods. The scaling paramter for fixed point method is significantly important. Newton's method adapted by fisher's information works well for this function.
+
+Let's compare the speed of these three methods. 
+
+```{r}
+set.seed(20180909)
+system.time(replicate(10000, Newton(5)))
+system.time(replicate(10000, fixed_point(5, 0.25)))
+system.time(replicate(10000, Newton_fisher(5)))
+```
+
+
+We can see that Newton's method adapted by fisher's information is the fastest. While the fixed point method is the slowest. I think this because fixed point method requires more iteration to achieve convergence. 
+
+
+
